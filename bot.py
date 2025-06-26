@@ -11,7 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import requests
 import hashlib
-import os  # <-- Import pour variables d'environnement
+import os
 
 # === CONFIGURATION via variables d'environnement ===
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -23,6 +23,7 @@ LOGIN_URL = 'https://fsjp.uh1.ac.ma/scolarite/login.php'
 CHROMEDRIVER_PATH = '/usr/bin/chromedriver'
 
 chrome_options = Options()
+chrome_options.binary_location = '/usr/bin/chromium'  # Important pour Docker
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
@@ -96,4 +97,4 @@ def check_table():
 if __name__ == '__main__':
     while True:
         check_table()
-        time.sleep(300)
+        time.sleep(300)  # Pause de 5 minutes
