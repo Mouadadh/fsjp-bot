@@ -1,23 +1,46 @@
-# Utilise une image Python slim officielle
-FROM python:3.10-slim
+FROM python:3.10-buster
 
-# Installer Chromium et chromedriver (navigateur + driver)
-RUN apt-get update && apt-get install -y chromium chromium-chromedriver
+# Installer Chromium et ses dépendances
+RUN apt-get update && apt-get install -y \
+    chromium \
+    chromium-driver \
+    wget \
+    unzip \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
-# Définir le répertoire de travail dans le container
+# Définir le dossier de travail
 WORKDIR /app
 
-# Copier les fichiers de ton projet dans le container
-COPY . /app
+# Copier les fichiers du projet
+COPY . .
 
 # Installer les dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Variables d'environnement (tu peux aussi les définir dans Render)
-ENV TELEGRAM_BOT_TOKEN=ton_token_ici
-ENV TELEGRAM_CHAT_ID=ton_chat_id_ici
-ENV APOGEE=24010503
-ENV BIRTHDATE=31/08/1995
+# Variables d'environnement à définir sur Render
+ENV TELEGRAM_BOT_TOKEN=""
+ENV TELEGRAM_CHAT_ID=""
+ENV APOGEE=""
+ENV BIRTHDATE=""
 
-# Commande pour démarrer le bot
+# Lancer le script Python
 CMD ["python", "bot.py"]
