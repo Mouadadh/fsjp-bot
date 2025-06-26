@@ -1,6 +1,7 @@
 from pyvirtualdisplay import Display
 display = Display(visible=0, size=(1024, 768))
 display.start()
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -10,24 +11,28 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import requests
 import hashlib
+import os  # <-- Import pour variables d'environnement
 
-# === CONFIGURATION ===
-TOKEN = '7558549874:AAHvAyPxkV10uKwotOOzMgVBpufx-jmFwtE'  # Ton token Telegram
-CHAT_ID = '1035855865'                                    # Ton chat ID Telegram
-
-APOGEE = '24010503'              # Numéro Apogée
-BIRTHDATE = '31/08/1995'         # Date de naissance au format jj/mm/aaaa
+# === CONFIGURATION via variables d'environnement ===
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+APOGEE = os.getenv('APOGEE')
+BIRTHDATE = os.getenv('BIRTHDATE')
 
 LOGIN_URL = 'https://fsjp.uh1.ac.ma/scolarite/login.php'
 CHROMEDRIVER_PATH = '/usr/bin/chromedriver'
 
 chrome_options = Options()
-chrome_options.add_argument("--headless")  # Supprime cette ligne si tu veux voir le navigateur
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
 
-# === VARIABLES GLOBALES ===
 last_table_hash = None
 
 def send_telegram_message(message):
+    if not TOKEN or not CHAT_ID:
+        print("⚠️ Token Telegram ou Chat ID non défini.")
+        return
     url = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
     data = {'chat_id': CHAT_ID, 'text': message}
     response = requests.post(url, data=data)
@@ -43,33 +48,31 @@ def get_table_hash(driver):
 def check_table():
     global last_table_hash
 
+    if not APOGEE or not BIRTHDATE:
+        print("⚠️ Numéro Apogée ou Date de naissance non défini.")
+        return
+
     service = Service(CHROMEDRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
     try:
-        # 1. Aller sur la page de login
         driver.get(LOGIN_URL)
 
-        # 2. Remplir les identifiants
         driver.find_element(By.ID, 'apogee').send_keys(APOGEE)
         driver.find_element(By.ID, 'birthdate').send_keys(BIRTHDATE)
         driver.find_element(By.TAG_NAME, 'form').submit()
 
-        # 3. Attendre redirection vers dashboard.php
         WebDriverWait(driver, 10).until(EC.url_contains('dashboard.php'))
         if "dashboard.php" not in driver.current_url:
             raise Exception("Échec de la connexion. Vérifie les identifiants.")
 
-        # 4. Cliquer sur "Session de printemps"
         bouton = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'btnRatt')))
         bouton.click()
 
-        # 5. Attendre chargement du tableau
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'table.table-striped.table-bordered.mt-3 tbody tr'))
         )
 
-        # 6. Calcul du hash du tableau
         current_hash, current_count = get_table_hash(driver)
         print(f"✅ Résultats détectés : {current_count} ligne(s)")
 
@@ -93,4 +96,4 @@ def check_table():
 if __name__ == '__main__':
     while True:
         check_table()
-        time.sleep(300)  # Pause de 5 minutes
+        time.sleep(300)
